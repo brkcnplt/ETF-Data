@@ -1,3 +1,4 @@
+import os
 import yfinance as yf
 from datetime import datetime
 import pandas as pd
@@ -8,6 +9,13 @@ import time
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from typing import List, Dict, Union, Optional
+from dotenv import load_dotenv  # dotenv ekledik
+
+# -------------------- Load environment variables --------------------
+load_dotenv()  # .env dosyasını yükler
+ETF_API_ENDPOINT = os.getenv("ETF_API_ENDPOINT")
+if not ETF_API_ENDPOINT:
+    raise ValueError("Lütfen 'ETF_API_ENDPOINT' environment variable'ını ayarlayın!")
 
 # -------------------- Constants --------------------
 LOW_OVERLAP_THRESHOLD = 30
@@ -30,11 +38,8 @@ adapter = HTTPAdapter(max_retries=retries)
 session.mount("http://", adapter)
 session.mount("https://", adapter)
 
-
+# -------------------- Fonksiyonlar --------------------
 def fetch_yf_history(ticker: yf.Ticker, period: str) -> pd.DataFrame:
-    """
-    yfinance history fonksiyonu için retry ile güvenli çağrı.
-    """
     for attempt in range(1, MAX_RETRIES + 1):
         try:
             data = ticker.history(period=period)
@@ -48,14 +53,9 @@ def fetch_yf_history(ticker: yf.Ticker, period: str) -> pd.DataFrame:
 
 
 def calc_cagr_with_dividend(etf_name: str, years: int) -> Optional[List[Union[str, float]]]:
-    """
-    Belirli bir ETF için CAGR (Compound Annual Growth Rate) ve
-    ortalama temettü verimini hesaplar.
-    """
     try:
         ticker = yf.Ticker(etf_name)
         data = fetch_yf_history(ticker, f"{years}y")
-
         if data.empty:
             logging.warning(f"Veri bulunamadı: {etf_name}")
             return None
@@ -85,11 +85,9 @@ def calc_cagr_with_dividend(etf_name: str, years: int) -> Optional[List[Union[st
 
 
 def get_etf_overlap(etf1: str, etf2: str) -> Union[str, Dict]:
-    """
-    İki ETF arasındaki overlap oranlarını hesaplar.
-    """
     try:
-        url = f"https://api.wisesheets.io/public/compare-etfs?etf1={etf1}&etf2={etf2}"
+        # Burada artık environment variable kullanıyoruz
+        url = f"{ETF_API_ENDPOINT}?etf1={etf1}&etf2={etf2}"
         response = session.get(url, timeout=REQUEST_TIMEOUT)
 
         if response.status_code != 200:
@@ -117,11 +115,7 @@ def get_etf_overlap(etf1: str, etf2: str) -> Union[str, Dict]:
 
 
 def print_overlap_with_color(overlap_percent: float) -> None:
-    """
-    Overlap oranını renklendirerek yazdırır ve loglar.
-    """
     RED, YELLOW, GREEN, RESET = '\033[91m', '\033[93m', '\033[92m', '\033[0m'
-
     try:
         if overlap_percent < LOW_OVERLAP_THRESHOLD:
             color, explanation = GREEN, "Çok düşük overlap → Portföy çeşitlendirmesi yüksek."
@@ -130,17 +124,15 @@ def print_overlap_with_color(overlap_percent: float) -> None:
         else:
             color, explanation = RED, "Yüksek overlap → Çoğunlukla aynı hisseler, risk azaltımı sınırlı."
 
-        message = f"Toplam overlap ağırlığı: {overlap_percent:.2f}% | Açıklama: {explanation}"
-
-        # Hem print hem log
         print(f"\nToplam overlap ağırlığı: {color}{overlap_percent:.2f}%{RESET}")
         print(f"Açıklama: {explanation}\n")
-        logging.info(message)
+        
 
     except Exception as e:
         logging.error(f"Overlap sonucu yazdırılırken hata oluştu: {e}")
 
 
+# -------------------- Main --------------------
 if __name__ == "__main__":
     try:
         options = [
