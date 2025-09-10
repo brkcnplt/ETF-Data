@@ -16,7 +16,8 @@ Bu Python aracı, **ETF’ler (Exchange Traded Fund)** üzerinde iki temel anali
 
 ## 📈 CAGR ve Temettü Analizi
 - Bir veya birden fazla ETF için **CAGR (Compound Annual Growth Rate)** ve **ortalama temettü verimini** hesaplar.  
-- Sonuçları tablo halinde gösterir.  
+- Sonuçları tablo halinde gösterir.
+- **✅ seekingalpha, etfdb, investing gibi sitelerdeki 10 yıllık veri için ücret talep edilirken bununla ücretsiz CAGR hesaplayabilirsiniz**
 
 ---
 
